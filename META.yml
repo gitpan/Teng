@@ -25,14 +25,14 @@ no_index:
 requires:
   Carp: 0
   Class::Accessor::Lite: 0.05
-  Class::Load: 0
+  Class::Load: 0.06
   DBI: 0
   DBIx::Inspector: 0.03
-  DBIx::TransactionManager: 1.02
+  DBIx::TransactionManager: 1.03
   Data::Page: 0
   SQL::Maker: 0.08
   parent: 0
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.03
+version: 0.04

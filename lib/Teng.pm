@@ -22,7 +22,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -110,6 +110,11 @@ sub connect {
 
 sub reconnect {
     my $self = shift;
+
+    if ($self->txn_manager->in_transaction) {
+        Carp::confess("You're in a middle of a transaction, so I'm going to die");
+    }
+
     $self->disconnect();
     $self->connect(@_);
 }
