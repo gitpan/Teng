@@ -22,7 +22,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -112,7 +112,7 @@ sub reconnect {
     my $self = shift;
 
     if ($self->txn_manager->in_transaction) {
-        Carp::confess("You're in a middle of a transaction, so I'm going to die");
+        Carp::confess("Detected disconnected database during a transaction. Refusing to proceed");
     }
 
     $self->disconnect();
@@ -154,7 +154,7 @@ sub dbh {
 }
 
 sub _execute {
-    my ($self, $sql, $binds, $table) = @_;
+    my ($self, $sql, $binds) = @_;
 
     my $sth;
     eval {
@@ -200,7 +200,7 @@ sub _insert {
     }
 
     my ($sql, @binds) = $self->sql_builder->insert( $table_name, $args, { prefix => $prefix } );
-    $self->_execute($sql, \@binds, $table_name);
+    $self->_execute($sql, \@binds);
 }
 
 sub fast_insert {
@@ -242,7 +242,7 @@ sub update {
     }
 
     my ($sql, @binds) = $self->sql_builder->update( $table_name, $args, $where );
-    my $sth = $self->_execute($sql, \@binds, $table_name);
+    my $sth = $self->_execute($sql, \@binds);
     my $rows = $sth->rows;
     $sth->finish;
 
@@ -253,7 +253,7 @@ sub delete {
     my ($self, $table_name, $where) = @_;
 
     my ($sql, @binds) = $self->sql_builder->delete( $table_name, $where );
-    my $sth = $self->_execute($sql, \@binds, $table_name);
+    my $sth = $self->_execute($sql, \@binds);
     my $rows = $sth->rows;
     $sth->finish;
 
