@@ -7,7 +7,7 @@ use DBI;
 use Teng::Row;
 use Teng::Iterator;
 use Teng::Schema;
-use DBIx::TransactionManager 1.02;
+use DBIx::TransactionManager 1.06;
 use Teng::QueryBuilder;
 use Class::Accessor::Lite
    rw => [ qw(
@@ -23,7 +23,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -176,10 +176,6 @@ sub _execute {
         $self->handle_error($sql, $binds, $@);
     }
 
-    if (! defined wantarray ) {
-        $sth->finish;
-        return;
-    }
     return $sth;
 }
 
@@ -234,6 +230,10 @@ sub insert {
 
     return $args if $self->suppress_row_objects;
 
+    if (scalar(@$pk) == 1) {
+        return $self->single($table_name, {$pk->[0] => $args->{$pk->[0]}});
+    }
+
     $table->row_class->new(
         {
             row_data   => $args,
@@ -283,7 +283,11 @@ sub in_transaction {
     $self->{txn_manager} ? $self->{txn_manager}->in_transaction : undef;
 }
 
-sub txn_scope    { $_[0]->txn_manager->txn_scope    }
+sub txn_scope {
+    my @caller = caller();
+    $_[0]->txn_manager->txn_scope(caller => \@caller);
+}
+
 sub txn_begin    { $_[0]->txn_manager->txn_begin    }
 sub txn_rollback { $_[0]->txn_manager->txn_rollback }
 sub txn_commit   { $_[0]->txn_manager->txn_commit   }
@@ -501,12 +505,7 @@ Teng provides a number of methods to all your classes,
 create your teng instance.
 
     # connect new database connection.
-    my $db = Your::Model->new(+{
-        dsn      => $dsn,
-        username => $username,
-        password => $password,
-        connect_options => $connect_options,
-    });
+    my $db = Your::Model->new(connect_info => [$dsn,$username,$password,$connect_options]);
 
 =over
 
