@@ -70,5 +70,36 @@ subtest 'update row count' => sub {
     is $cnt, 2;
 };
 
+subtest 'update primary key' => sub {
+    my $row = $db->insert('mock_basic',{
+        id   => 3,
+        name => 'php',
+    });
+    $row->update({id => 999});
+    ok !$db->single('mock_basic',{id => 3});
+
+    my $new_row = $db->single('mock_basic',{id => 999});
+    isa_ok $new_row, 'Teng::Row';
+    is $row->id, 999;
+    is $row->name, 'php';
+};
+
+subtest 'empty update' => sub {
+    my $row = $db->single('mock_basic',{
+        id => 1,
+    });
+    is $row->name, 'java';
+
+    $row->set_column(name => 'perl');
+    is $row->update, 1;
+    is $row->name, 'perl';
+
+    is $row->update, 0;
+    is $row->name, 'perl';
+
+    is $row->update({}), 0;
+    is $row->name, 'perl';
+};
+
 done_testing;
 
