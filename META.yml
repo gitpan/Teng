@@ -32,9 +32,9 @@ requires:
   DBIx::TransactionManager: 1.06
   Data::Page: 0
   Data::Page::NoTotalEntries: 0.02
-  SQL::Maker: 0.08
+  SQL::Maker: 0.14
   parent: 0
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.10
+version: 0.11

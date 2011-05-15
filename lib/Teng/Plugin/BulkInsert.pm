@@ -8,8 +8,13 @@ our @EXPORT = qw/bulk_insert/;
 sub bulk_insert {
     my ($self, $table_name, $args) = @_;
 
+    return unless scalar(@{$args||[]});
+
     if ($self->dbh->{Driver}->{Name} eq 'mysql') {
         my $table = $self->schema->get_table($table_name);
+        if (! $table) {
+            Carp::croak( "Table definition for $table_name does not exist (Did you declare it in our schema?)" );
+        }
 
         if ( $table->has_deflators ) {
             for my $row (@$args) {

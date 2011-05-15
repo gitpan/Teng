@@ -23,7 +23,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -203,8 +203,12 @@ sub _last_insert_id {
 sub _insert {
     my ($self, $table_name, $args, $prefix) = @_;
 
-    $prefix ||= 'INSERT';
+    $prefix ||= 'INSERT INTO';
     my $table = $self->schema->get_table($table_name);
+    if (! $table) {
+        local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+        Carp::croak( "Table definition for $table_name does not exist (Did you declare it in our schema?)" );
+    }
 
     for my $col (keys %{$args}) {
         $args->{$col} = $table->call_deflate($col, $args->{$col});
@@ -251,6 +255,9 @@ sub update {
     my ($self, $table_name, $args, $where) = @_;
 
     my $table = $self->schema->get_table($table_name);
+    if (! $table) {
+        Carp::croak( "Table definition for $table_name does not exist (Did you declare it in our schema?)" );
+    }
 
     for my $col (keys %{$args}) {
        $args->{$col} = $table->call_deflate($col, $args->{$col});
