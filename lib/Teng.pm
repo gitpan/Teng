@@ -23,7 +23,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -251,6 +251,17 @@ sub insert {
     );
 }
 
+sub _update {
+    my ($self, $table_name, $args, $where) = @_;
+
+    my ($sql, @binds) = $self->sql_builder->update( $table_name, $args, $where );
+    my $sth = $self->_execute($sql, \@binds);
+    my $rows = $sth->rows;
+    $sth->finish;
+
+    $rows;
+}
+
 sub update {
     my ($self, $table_name, $args, $where) = @_;
 
@@ -262,13 +273,8 @@ sub update {
     for my $col (keys %{$args}) {
        $args->{$col} = $table->call_deflate($col, $args->{$col});
     }
-
-    my ($sql, @binds) = $self->sql_builder->update( $table_name, $args, $where );
-    my $sth = $self->_execute($sql, \@binds);
-    my $rows = $sth->rows;
-    $sth->finish;
-
-    $rows;
+    
+    $self->_update($table_name, $args, $where);
 }
 
 sub delete {
