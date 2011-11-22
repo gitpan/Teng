@@ -10,10 +10,15 @@ sub load {
     my $class = shift;
     my %args = @_==1 ? %{$_[0]} : @_;
 
-    my $dbh = $args{dbh} or Carp::croak("missing mandatory parameter 'dbh'");
     my $namespace = $args{namespace} or Carp::croak("missing mandatory parameter 'namespace'");
 
-    my $schema = Teng::Schema->new();
+    my $teng = $namespace->new(%args);
+    my $dbh = $teng->dbh;
+    unless ($dbh) {
+        Carp::croak("missing mandatory parameter 'dbh' or 'connect_info'");
+    }
+
+    my $schema = Teng::Schema->new(namespace => $args{namespace});
 
     my $inspector = DBIx::Inspector->new(dbh => $dbh);
     for my $table_info ($inspector->tables) {
@@ -39,7 +44,9 @@ sub load {
             )
         );
     }
-    return $schema;
+
+    $teng->schema($schema);
+    return $teng;
 }
 
 1;
@@ -54,13 +61,9 @@ Teng::Schema::Loader - Dynamic Schema Loader
     use Teng;
     use Teng::Schema::Loader;
 
-    my $schema = Teng::Schema::Loader->load(
+    my $teng = Teng::Schema::Loader->load(
         dbh       => $dbh,
         namespace => 'MyAPP::DB'
-    );
-    my $teng = Teng->new(
-        dbh    => $dbh,
-        schema => $schema
     );
 
 =head1 DESCRIPTION

@@ -27,7 +27,7 @@ requires:
   Carp: 0
   Class::Accessor::Lite: 0.05
   Class::Load: 0.06
-  DBI: 0
+  DBI: 1.33
   DBIx::Inspector: 0.03
   DBIx::TransactionManager: 1.06
   Data::Page: 0
@@ -37,4 +37,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.14
+version: 0.14_01

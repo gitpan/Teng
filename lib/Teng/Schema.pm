@@ -5,13 +5,15 @@ use Teng::Row;
 use Class::Accessor::Lite
     rw => [ qw(
         tables
+        namespace
     ) ]
 ;
 
 sub new {
     my ($class, %args) = @_;
     bless {
-        tables => {},
+        tables    => {},
+        namespace => '',
         %args,
     }, $class;
 }
