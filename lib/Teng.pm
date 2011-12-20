@@ -22,7 +22,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.14_03';
+our $VERSION = '0.14_04';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -135,7 +135,15 @@ sub reconnect {
         $self->connect(@_);
     }
     else {
-        $self->{dbh} = $dbh->clone({InactiveDestroy => 0});
+        # Why don't use $dbh->clone({InactiveDestroy => 0}) ?
+        # because, DBI v1.616 clone with \%attr has bug.
+        # my $dbh2 = $dbh->clone({});
+        # my $dbh3 = $dbh2->clone({});
+        # $dbh2 is ok, but $dbh3 is undef.
+        $self->{dbh} = eval { $dbh->clone }
+            or Carp::croak("ReConnection error: " . ($@ || $DBI::errstr));
+        $self->{dbh}->{InactiveDestroy} = 0;
+
         $self->owner_pid($$);
         $self->_on_connect_do;
     }
@@ -423,9 +431,14 @@ sub search {
         Carp::croak("No such table $table_name");
     }
 
+    my $columns = $opt->{'+columns'}
+        ? [@{$table->{columns}}, @{$opt->{'+columns'}}]
+        : ($opt->{columns} || $table->{columns})
+    ;
+
     my ($sql, @binds) = $self->{sql_builder}->select(
         $table_name,
-        ($opt->{columns} || $table->{columns}),
+        $columns,
         $where,
         $opt
     );
@@ -461,9 +474,14 @@ sub single {
     my $table = $self->{schema}->get_table( $table_name );
     Carp::croak("No such table $table_name") unless $table;
 
+    my $columns = $opt->{'+columns'}
+        ? [@{$table->{columns}}, @{$opt->{'+columns'}}]
+        : ($opt->{columns} || $table->{columns})
+    ;
+
     my ($sql, @binds) = $self->{sql_builder}->select(
         $table_name,
-        ($opt->{columns} || $table->{columns}),
+        $columns,
         $where,
         $opt
     );
