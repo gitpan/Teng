@@ -8,12 +8,12 @@ sub new {
     my ($class, $args) = @_;
 
     my $self = bless {
-        select_columns     => [keys %{$args->{row_data}}],
         _get_column_cached => {},
         _dirty_columns     => {},
         %$args,
     }, $class;
 
+    $self->{select_columns} ||= [keys %{$args->{row_data}}];
     $self->{table} ||= $args->{teng}->schema->get_table($args->{table_name});
 
     $self;
@@ -99,17 +99,18 @@ sub update {
         Carp::croak q{can't update from basic Teng::Row class.};
     }
 
+    my $table      = $self->{table};
     my $table_name = $self->{table_name};
-    my $table = $self->{teng}->{schema}->get_table($table_name);
     if (! $table) {
         Carp::croak( "Table definition for $table_name does not exist (Did you declare it in our schema?)" );
     }
 
+    %$upd = (%{$self->get_dirty_columns}, %{$upd||+{}});
     for my $col (keys %{$upd}) {
        $upd->{$col} = $table->call_deflate($col, $upd->{$col});
     }
 
-    my $where = $self->_where_cond($table_name);
+    my $where = $self->_where_cond;
     $self->set_columns($upd);
 
     $upd = $self->get_dirty_columns;
@@ -129,18 +130,19 @@ sub delete {
         Carp::croak q{can't delete from basic Teng::Row class.};
     }
 
-    $self->{teng}->delete($self->{table_name}, $self->_where_cond($self->{table_name}));
+    $self->{teng}->delete($self->{table_name}, $self->_where_cond);
 }
 
 sub refetch {
     my $self = shift;
-    $self->{teng}->single($self->{table_name}, $self->_where_cond($self->{table_name}));
+    $self->{teng}->single($self->{table_name}, $self->_where_cond);
 }
 
 sub _where_cond {
-    my ($self, $table_name) = @_;
+    my $self = shift;
 
-    my $table = $self->{teng}->schema->get_table( $table_name );
+    my $table      = $self->{table};
+    my $table_name = $self->{table_name};
     unless ($table) {
         Carp::croak("Unknown table: $table_name");
     }
