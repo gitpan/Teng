@@ -24,23 +24,24 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.14_05';
+our $VERSION = '0.15';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
     $pkg = $pkg =~ s/^\+// ? $pkg : "Teng::Plugin::$pkg";
     Class::Load::load_class($pkg);
 
-    no strict 'refs';
-    for my $meth ( @{"${pkg}::EXPORT"} ) {
-        my $dest_meth =
-          ( $opt->{alias} && $opt->{alias}->{$meth} )
-          ? $opt->{alias}->{$meth}
-          : $meth;
-        *{"${class}::${dest_meth}"} = $pkg->can($meth);
+    $class = ref($class) if ref($class);
+
+    my $alias = delete $opt->{alias} || +{};
+    {
+        no strict 'refs';
+        for my $method ( @{"${pkg}::EXPORT"} ){
+            *{$class . '::' . ($alias->{$method} || $method)} = $pkg->can($method);
+        }
     }
 
-    $pkg->init($pkg) if $pkg->can('init');
+    $pkg->init($class, $opt) if $pkg->can('init');
 }
 
 sub new {
@@ -226,36 +227,18 @@ sub _execute {
     }
 
     my $sth;
-    eval { $sth = $self->__execute($sql, $binds) };
+    eval {
+        $sth = $self->dbh->prepare($sql);
+        my $i = 1;
+        for my $v ( @{ $binds || [] } ) {
+            $sth->bind_param( $i++, ref($v) ? @$v : $v );
+        }
+        $sth->execute();
+    };
 
     if ($@) {
-        if ( $self->mode eq 'fixup' ) {
-            if ( $self->connected ) {
-                $self->handle_error($sql, $binds, $@);
-            }
-            $self->reconnect;
-            eval { $sth = $self->__execute($sql, $binds) };
-            if ($@) {
-                $self->handle_error($sql, $binds, $@);
-            }
-        }
-        else {
-            $self->handle_error($sql, $binds, $@);
-        }
+        $self->handle_error($sql, $binds, $@);
     }
-
-    return $sth;
-}
-
-sub __execute {
-    my ($self, $sql, $binds) = @_;
-
-    my $sth = $self->dbh->prepare($sql);
-    my $i = 1;
-    for my $v ( @{ $binds || [] } ) {
-        $sth->bind_param( $i++, ref($v) ? @$v : $v );
-    }
-    $sth->execute();
 
     return $sth;
 }
@@ -440,38 +423,13 @@ sub txn_scope {
     my $self = shift;
     my @caller = caller();
 
-    my $scope;
-    if ( $self->mode eq 'fixup' ) {
-        eval { $scope = $self->txn_manager->txn_scope(caller => \@caller) };
-        if ( $@ ) {
-            if ( $self->connected ) {
-                die $@;
-            }
-            $self->reconnect;
-            $scope = $self->txn_manager->txn_scope(caller => \@caller);
-        }
-    }
-    else {
-        $scope = $self->txn_manager->txn_scope(caller => \@caller);
-    }
-    return $scope;
+    $self->txn_manager->txn_scope(caller => \@caller);
 }
 
 sub txn_begin {
     my $self = shift;
-    if ( $self->mode eq 'fixup' ) {
-        eval { $self->txn_manager->txn_begin };
-        if ( $@ ) {
-            if ( $self->connected ) {
-                die $@;
-            }
-            $self->reconnect;
-            $self->txn_manager->txn_begin;
-        }
-    }
-    else {
-        $self->txn_manager->txn_begin;
-    }
+
+    $self->txn_manager->txn_begin;
 }
 sub txn_rollback { $_[0]->txn_manager->txn_rollback }
 sub txn_commit   { $_[0]->txn_manager->txn_commit   }
@@ -761,10 +719,6 @@ Specifies the database handle to use.
 
 reconnect at dbh->ping fail each execute.
 
-=item * C<fixup>
-
-reconnect at fail execute.
-
 =item * C<no_ping>
 
 no auto reconnect.
@@ -914,7 +868,7 @@ It's useful in case use IN statement.
 
 If you give table_name. It is assumed the hint that makes Teng::Row's Object.
 
-=item $itr = $teng->search_by_sql($sql, [\@bind_vlues, [$table_name]])
+=item $itr = $teng->search_by_sql($sql, [\@bind_values, [$table_name]])
 
 execute your SQL
 
@@ -970,7 +924,7 @@ rollback transaction.
 
 finish transaction.
 
-=item $teng->do($sql, [\%option, \@bind_values])
+=item $teng->do($sql, [\%option, @bind_values])
 
 Execute the query specified by C<$sql>, using C<%option> and C<@bind_values> as necessary. This pretty much a wrapper around L<http://search.cpan.org/dist/DBI/DBI.pm#do>
 
@@ -996,7 +950,19 @@ set row object creation mode.
 
 =item $teng->load_plugin();
 
-load Teng::Plugin's
+ $teng->load_plugin($plugin_class, $options);
+
+This imports plugin class's methods to C<$teng> class
+and it calls $plugin_class's init method if it has.
+
+ $plugin_class->init($teng, $options);
+
+If you want to change imported method name, use C<alias> option.
+for example:
+
+ YourDB->load_plugin('BulkInsert', { alias => { bulk_insert => 'isnert_bulk' } });
+
+BulkInsert's "bulk_insert" method is imported as "insert_bulk".
 
 =item $teng->handle_error
 

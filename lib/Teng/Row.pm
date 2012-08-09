@@ -49,7 +49,7 @@ sub get_column {
     if ( exists $self->{row_data}->{$col} ) {
         return $self->{row_data}->{$col};
     } else {
-        Carp::croak("Specified colum '$col' not found in row (query: " . ( $self->{sql} || 'unknown' ) . ")" );
+        Carp::croak("Specified column '$col' not found in row (query: " . ( $self->{sql} || 'unknown' ) . ")" );
     }
 }
 
@@ -203,7 +203,7 @@ get a column value from a row object.
 
 =item $row->get_columns
 
-    my %data = $row->get_columns;
+    my $data = $row->get_columns;
 
 Does C<get_column>, for all column values.
 
