@@ -3,7 +3,7 @@ abstract: 'very simple DBI wrapper/ORMapper'
 author:
   - 'Atsushi Kobayashi  C<< <nekokak __at__ gmail.com> >>'
 build_requires:
-  ExtUtils::MakeMaker: 6.36
+  ExtUtils::MakeMaker: 6.42
   Test::Mock::Guard: 0
   Test::More: 0.96
   Test::Requires: 0
@@ -11,10 +11,9 @@ build_requires:
   Test::mysqld: 0
   Test::postgresql: 0
 configure_requires:
-  ExtUtils::MakeMaker: 6.36
+  ExtUtils::MakeMaker: 6.42
 distribution_type: module
-dynamic_config: 1
-generated_by: 'Module::Install version 1.04'
+generated_by: 'Module::Install version 1.02'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -39,4 +38,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.15
+version: 0.16

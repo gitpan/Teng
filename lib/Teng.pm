@@ -24,7 +24,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -231,7 +231,7 @@ sub _execute {
         $sth = $self->dbh->prepare($sql);
         my $i = 1;
         for my $v ( @{ $binds || [] } ) {
-            $sth->bind_param( $i++, ref($v) ? @$v : $v );
+            $sth->bind_param( $i++, ref($v) eq 'ARRAY' ? @$v : $v );
         }
         $sth->execute();
     };
@@ -474,24 +474,29 @@ sub search {
     $self->search_by_sql($sql, \@binds, $table_name);
 }
 
-sub search_named {
-    my ($self, $sql, $args, $table_name) = @_;
+sub _bind_named {
+    my ($self, $sql, $args ) = @_;
 
-    my %named_bind = %{$args};
     my @bind;
     $sql =~ s{:([A-Za-z_][A-Za-z0-9_]*)}{
-        Carp::croak("'$1' does not exist in bind hash") if !exists $named_bind{$1};
-        if ( ref $named_bind{$1} && ref $named_bind{$1} eq "ARRAY" ) {
-            push @bind, @{ $named_bind{$1} };
-            my $tmp = join ',', map { '?' } @{ $named_bind{$1} };
+        Carp::croak("'$1' does not exist in bind hash") if !exists $args->{$1};
+        if ( ref $args->{$1} && ref $args->{$1} eq "ARRAY" ) {
+            push @bind, @{ $args->{$1} };
+            my $tmp = join ',', map { '?' } @{ $args->{$1} };
             "( $tmp )";
         } else {
-            push @bind, $named_bind{$1};
+            push @bind, $args->{$1};
             '?'
         }
     }ge;
 
-    $self->search_by_sql($sql, \@bind, $table_name);
+    return ($sql, \@bind);
+}
+
+sub search_named {
+    my ($self, $sql, $args, $table_name) = @_;
+
+    $self->search_by_sql($self->_bind_named($sql, $args), $table_name);
 }
 
 sub single {
@@ -540,6 +545,36 @@ sub search_by_sql {
         suppress_object_creation => $self->{suppress_row_objects},
     );
     return wantarray ? $itr->all : $itr;
+}
+
+sub single_by_sql {
+    my ($self, $sql, $bind, $table_name) = @_;
+
+    $table_name ||= $self->_guess_table_name( $sql );
+    my $table = $self->{schema}->get_table( $table_name );
+    Carp::croak("No such table $table_name") unless $table;
+
+    my $sth = $self->_execute($sql, $bind);
+    my $row = $sth->fetchrow_hashref($self->{fields_case});
+
+    return unless $row;
+    return $row if $self->{suppress_row_objects};
+
+    $table->{row_class}->new(
+        {
+            sql        => $sql,
+            row_data   => $row,
+            teng       => $self,
+            table      => $table,
+            table_name => $table_name,
+        }
+    );
+}
+
+sub single_named {
+    my ($self, $sql, $args, $table_name) = @_;
+
+    $self->single_by_sql($self->_bind_named($sql, $args), $table_name);
 }
 
 sub _guess_table_name {
@@ -626,9 +661,9 @@ in your script.
             id   => 1,
         }
     );
-    $row->update({name => 'nekokak'});
+    $row->update({name => 'nekokak'}); # same do { $row->name('nekokak'); $row->update; }
 
-    $row = $teng->search_by_sql(q{SELECT id, name FROM user WHERE id = ?}, [ 1 ]);
+    $row = $teng->single_by_sql(q{SELECT id, name FROM user WHERE id = ?}, [ 1 ]);
     $row->delete();
 
 =head1 ARCHITECTURE
@@ -817,6 +852,18 @@ You can also call update on a row object:
     my $row = $teng->single('user',{id => 1});
     $row->update({name => 'nomaneko'});
 
+You can use the set_column method:
+
+    my $row = $teng->single('user', {id => 1});
+    $row->set_column( name => 'yappo' );
+    $row->update;
+
+you can column update by using column method:
+
+    my $row = $teng->single('user', {id => 1});
+    $row->name('yappo');
+    $row->update;
+
 =item $delete_row_count = $teng->delete($table, \%delete_condition)
 
 Deletes the specified record(s) from C<$table> and returns the number of rows deleted. You may optionally specify C<%delete_condition> to create a conditional delete query.
@@ -883,6 +930,30 @@ execute your SQL
 
 If $table is specified, it set table infomation to result iterator.
 So, you can use table row class to search_by_sql result.
+
+=item $row = $teng->single_by_sql($sql, [\@bind_values, [$table_name]])
+
+get one record from your SQL.
+
+    my $row = $teng->single_by_sql(q{SELECT id,name FROM user WHERE id = ? LIMIT 1}, [1], 'user');
+
+This is a shortcut for
+
+    my $row = $teng->search_by_sql(q{SELECT id,name FROM user WHERE id = ? LIMIT 1}, [1], 'user')->next;
+
+But optimized implementation.
+
+=item $row = $teng->single_named($sql, [\%bind_values, [$table_name]])
+
+get one record from execute named query
+
+    my $row = $teng->single_named(q{SELECT id,name FROM user WHERE id = :id LIMIT 1}, {id => 1}, 'user');
+
+This is a shortcut for
+
+    my $row = $teng->search_named(q{SELECT id,name FROM user WHERE id = :id LIMIT 1}, {id => 1}, 'user')->next;
+
+But optimized implementation.
 
 =item $teng->txn_scope
 
