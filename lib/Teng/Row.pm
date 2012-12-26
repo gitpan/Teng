@@ -123,7 +123,7 @@ sub update {
     return 0 unless %$upd;
 
     my $bind_args = $self->{teng}->_bind_sql_type_to_args($table, $upd);
-    my $result = $self->{teng}->_update($table_name, $bind_args, $where, 1);
+    my $result = $self->{teng}->do_update($table_name, $bind_args, $where, 1);
     $self->{_dirty_columns} = {};
 
     $result;
@@ -144,6 +144,7 @@ sub refetch {
     $self->{teng}->single($self->{table_name}, $self->_where_cond);
 }
 
+# Generate a where clause to fetch this row itself.
 sub _where_cond {
     my $self = shift;
 
@@ -167,13 +168,13 @@ sub _where_cond {
             Carp::croak "can't get primary columns in your query.";
         }
 
-        return +{ map { $_ => $self->$_() } @$pk };
+        return +{ map { $_ => $self->get_column($_) } @$pk };
     } else {
         unless (grep { $pk eq $_ } @{$self->{select_columns}}) {
             Carp::croak "can't get primary column in your query.";
         }
 
-        return +{ $pk => $self->$pk };
+        return +{ $pk => $self->get_column($pk) };
     }
 }
 
@@ -208,11 +209,15 @@ create new Teng::Row's instance
 
 get a column value from a row object.
 
+Note: This method does not inflate values.
+
 =item $row->get_columns
 
     my $data = $row->get_columns;
 
 Does C<get_column>, for all column values.
+
+Note: This method does not inflate values.
 
 =item $row->set_columns(\%new_row_data)
 

@@ -19,12 +19,12 @@ use Class::Accessor::Lite
         sql_builder
         sql_comment
         owner_pid
-        mode
+        no_ping
         fields_case
     )]
 ;
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -48,10 +48,17 @@ sub new {
     my $class = shift;
     my %args = @_ == 1 ? %{$_[0]} : @_;
 
+    if ( my $mode = delete $args{mode} ) {
+        warn "IMPORTANT: 'mode' option is DEPRECATED AND *WILL* BE REMOVED. PLEASE USE 'no_ping' option.\n";
+        if ( !exists $args{no_ping} ) {
+            $args{no_ping} = $mode eq 'ping' ? 0 : 1; 
+        }
+    }
+
     my $self = bless {
         schema_class => "$class\::Schema",
         owner_pid    => $$,
-        mode         => 'ping',
+        no_ping      => 0,
         fields_case  => 'NAME_lc',
         %args,
     }, $class;
@@ -79,6 +86,23 @@ sub new {
     }
 
     return $self;
+}
+
+sub mode {
+    my $self = shift;
+    warn "IMPORTANT: 'mode' option is DEPRECATED AND *WILL* BE REMOVED. PLEASE USE 'no_ping' option.\n";
+
+    if ( @_ ) {
+        my $mode = shift;
+        if ( $mode eq 'ping' ) {
+            $self->no_ping(0);
+        }
+        else {
+            $self->no_ping(1);
+        }
+    }
+
+    return $self->no_ping ? 'no_ping' : 'ping';
 }
 
 # forcefully connect
@@ -143,8 +167,13 @@ sub reconnect {
         # my $dbh2 = $dbh->clone({});
         # my $dbh3 = $dbh2->clone({});
         # $dbh2 is ok, but $dbh3 is undef.
-        $self->{dbh} = eval { $dbh->clone }
+        # ---
+        # Don't assign $self-{dbh} directry.
+        # Because if $self->{dbh} is undef then reconnect fail always.
+        # https://github.com/nekokak/p5-Teng/pull/98
+        my $new_dbh = eval { $dbh->clone }
             or Carp::croak("ReConnection error: " . ($@ || $DBI::errstr));
+        $self->{dbh} = $new_dbh;
         $self->{dbh}->{InactiveDestroy} = 0;
 
         $self->owner_pid($$);
@@ -193,7 +222,7 @@ sub _verify_pid {
         if ( !$dbh->FETCH('Active') ) {
             $self->reconnect;
         }
-        elsif ( $self->mode eq 'ping' && !$dbh->ping) {
+        elsif ( !$self->no_ping && !$dbh->ping) {
             $self->reconnect;
         }
     }
@@ -213,10 +242,17 @@ sub connected {
 }
 
 sub _execute {
+    my $self = shift;
+    warn "IMPORTANT: '_execute' method is DEPRECATED AND *WILL* BE REMOVED. PLEASE USE 'execute' method.\n";
+    return $self->execute(@_);
+}
+
+our $SQL_COMMENT_LEVEL = 0;
+sub execute {
     my ($self, $sql, $binds) = @_;
 
     if ($ENV{TENG_SQL_COMMENT} || $self->sql_comment) {
-        my $i = 1; # optimize, as we would *NEVER* be called
+        my $i = $SQL_COMMENT_LEVEL; # optimize, as we would *NEVER* be called
         while ( my (@caller) = caller($i++) ) {
             next if ( $caller[0]->isa( __PACKAGE__ ) );
             my $comment = "$caller[1] at line $caller[2]";
@@ -273,7 +309,7 @@ sub _bind_sql_type_to_args {
     return $bind_args;
 }
 
-sub _insert {
+sub do_insert {
     my ($self, $table_name, $args, $prefix) = @_;
 
     $prefix ||= 'INSERT INTO';
@@ -288,20 +324,20 @@ sub _insert {
     }
     my $bind_args = $self->_bind_sql_type_to_args( $table, $args );
     my ($sql, @binds) = $self->{sql_builder}->insert( $table_name, $bind_args, { prefix => $prefix } );
-    $self->_execute($sql, \@binds);
+    $self->execute($sql, \@binds);
 }
 
 sub fast_insert {
     my ($self, $table_name, $args, $prefix) = @_;
 
-    $self->_insert($table_name, $args, $prefix);
+    $self->do_insert($table_name, $args, $prefix);
     $self->_last_insert_id($table_name);
 }
 
 sub insert {
     my ($self, $table_name, $args, $prefix) = @_;
 
-    $self->_insert($table_name, $args, $prefix);
+    $self->do_insert($table_name, $args, $prefix);
 
     my $table = $self->schema->get_table($table_name);
     my $pk = $table->primary_keys();
@@ -350,7 +386,7 @@ sub bulk_insert {
         }
 
         my ($sql, @binds) = $self->sql_builder->insert_multi( $table_name, $args );
-        $self->_execute($sql, \@binds);
+        $self->execute($sql, \@binds);
     } else {
         # use transaction for better performance and atomicity.
         my $txn = $self->txn_scope();
@@ -362,11 +398,11 @@ sub bulk_insert {
     }
 }
 
-sub _update {
+sub do_update {
     my ($self, $table_name, $args, $where) = @_;
 
     my ($sql, @binds) = $self->{sql_builder}->update( $table_name, $args, $where );
-    my $sth = $self->_execute($sql, \@binds);
+    my $sth = $self->execute($sql, \@binds);
     my $rows = $sth->rows;
     $sth->finish;
 
@@ -385,14 +421,14 @@ sub update {
        $args->{$col} = $table->call_deflate($col, $args->{$col});
     }
     
-    $self->_update($table_name, $self->_bind_sql_type_to_args( $table, $args ), $where);
+    $self->do_update($table_name, $self->_bind_sql_type_to_args( $table, $args ), $where);
 }
 
 sub delete {
     my ($self, $table_name, $where) = @_;
 
     my ($sql, @binds) = $self->{sql_builder}->delete( $table_name, $where );
-    my $sth = $self->_execute($sql, \@binds);
+    my $sth = $self->execute($sql, \@binds);
     my $rows = $sth->rows;
     $sth->finish;
 
@@ -513,10 +549,10 @@ sub single {
         $where,
         $opt
     );
-    my $sth = $self->_execute($sql, \@binds);
+    my $sth = $self->execute($sql, \@binds);
     my $row = $sth->fetchrow_hashref($self->{fields_case});
 
-    return unless $row;
+    return undef unless $row;
     return $row if $self->{suppress_row_objects};
 
     $table->{row_class}->new(
@@ -534,7 +570,7 @@ sub search_by_sql {
     my ($self, $sql, $bind, $table_name) = @_;
 
     $table_name ||= $self->_guess_table_name( $sql );
-    my $sth = $self->_execute($sql, $bind);
+    my $sth = $self->execute($sql, $bind);
     my $itr = Teng::Iterator->new(
         teng             => $self,
         sth              => $sth,
@@ -554,7 +590,7 @@ sub single_by_sql {
     my $table = $self->{schema}->get_table( $table_name );
     Carp::croak("No such table $table_name") unless $table;
 
-    my $sth = $self->_execute($sql, $bind);
+    my $sth = $self->execute($sql, $bind);
     my $row = $sth->fetchrow_hashref($self->{fields_case});
 
     return unless $row;
@@ -590,6 +626,7 @@ sub handle_error {
     my ($self, $stmt, $bind, $reason) = @_;
     require Data::Dumper;
 
+    local $Data::Dumper::Maxdepth = 2;
     $stmt =~ s/\n/\n          /gm;
     Carp::croak sprintf <<"TRACE", $reason, $stmt, Data::Dumper::Dumper($bind);
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -627,8 +664,6 @@ Teng - very simple DBI wrapper/ORMapper
 
 Teng is very simple DBI wrapper and simple O/R Mapper.
 It aims to be lightweight, with minimal dependencies so it's easier to install. 
-
-B<THE SOFTWARE IS IT'S IN ALPHA QUALITY. IT MAY CHANGE THE API WITHOUT NOTICE.>
 
 =head1 BASIC USAGE
 
@@ -746,23 +781,14 @@ You must pass C<connect_info> or C<dbh> to the constructor.
 
 Specifies the database handle to use. 
 
-=item * C<mode>
-
-=over
-
-=item * C<ping(default)>
-
-reconnect at dbh->ping fail each execute.
-
 =item * C<no_ping>
 
-no auto reconnect.
+By default, ping before each executing query.
+If it affect performance then you can set to true for ping stopping.
 
 =item * C<fields_case>
 
 specific DBI.pm's FetchHashKeyName.
-
-=back
 
 =item * C<schema>
 
@@ -864,6 +890,12 @@ you can column update by using column method:
     $row->name('yappo');
     $row->update;
 
+=item $updated_row_count = $teng->do_update($table_name, \%set, \%where)
+
+This is low level API for UPDATE. Normally, you should use update method instead of this.
+
+This method does not deflate \%args.
+
 =item $delete_row_count = $teng->delete($table, \%delete_condition)
 
 Deletes the specified record(s) from C<$table> and returns the number of rows deleted. You may optionally specify C<%delete_condition> to create a conditional delete query.
@@ -954,6 +986,11 @@ This is a shortcut for
     my $row = $teng->search_named(q{SELECT id,name FROM user WHERE id = :id LIMIT 1}, {id => 1}, 'user')->next;
 
 But optimized implementation.
+
+=item $sth = $teng->execute($sql, [\@bind_values])
+
+execute query and get statement handler.
+and will be inserted caller's file and line as a comment in the SQL if $ENV{TENG_SQL_COMMENT} or sql_comment is true value.
 
 =item $teng->txn_scope
 
