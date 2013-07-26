@@ -1,15 +1,10 @@
-bench/lookup_vs_single.pl
+Build.PL
 Changes
-inc/Module/Install.pm
-inc/Module/Install/AuthorTests.pm
-inc/Module/Install/Base.pm
-inc/Module/Install/Can.pm
-inc/Module/Install/Fetch.pm
-inc/Module/Install/Makefile.pm
-inc/Module/Install/Metadata.pm
-inc/Module/Install/Repository.pm
-inc/Module/Install/Win32.pm
-inc/Module/Install/WriteAll.pm
+LICENSE
+META.json
+README.md
+bench/lookup_vs_single.pl
+cpanfile
 lib/Teng.pm
 lib/Teng/Iterator.pm
 lib/Teng/Plugin/BulkInsert.pm
@@ -19,8 +14,8 @@ lib/Teng/Plugin/Lookup.pm
 lib/Teng/Plugin/Pager.pm
 lib/Teng/Plugin/Pager/MySQLFoundRows.pm
 lib/Teng/Plugin/Replace.pm
-lib/Teng/Plugin/SingleBySQL.pm
 lib/Teng/Plugin/SQLPager.pm
+lib/Teng/Plugin/SingleBySQL.pm
 lib/Teng/QueryBuilder.pm
 lib/Teng/Row.pm
 lib/Teng/Schema.pm
@@ -28,11 +23,6 @@ lib/Teng/Schema/Declare.pm
 lib/Teng/Schema/Dumper.pm
 lib/Teng/Schema/Loader.pm
 lib/Teng/Schema/Table.pm
-LICENSE
-Makefile.PL
-MANIFEST			This list of files
-META.yml
-README
 t/001_basic/001_compile.t
 t/001_basic/002_schema.t
 t/001_basic/003_schema_loader.t
@@ -95,6 +85,7 @@ t/999_regression/prepare_error_handling.t
 t/999_regression/reconnect.t
 t/999_regression/reconnect_from_dbh.t
 t/999_regression/set_column_bug.t
+t/Utils.pm
 t/lib/Mock/Basic.pm
 t/lib/Mock/Basic/Schema.pm
 t/lib/Mock/BasicBindColumn.pm
@@ -105,9 +96,11 @@ t/lib/Mock/Inflate/Schema.pm
 t/lib/MyGuard.pm
 t/lib/Teng/Plugin/ArgsTest.pm
 t/lib/TengTest.pm
-t/Utils.pm
+xt/01_spell.t
 xt/02_pod.t
 xt/03_pod_coverage.t
+xt/Utils/mysql.pm
+xt/Utils/postgresql.pm
 xt/mysql/003_schema_loader.t
 xt/mysql/004_schema_dumper.t
 xt/mysql/bulk_insert.t
@@ -120,5 +113,5 @@ xt/perlcriticrc
 xt/postgresql/bind_param.t
 xt/postgresql/common.t
 xt/postgresql/transaction.t
-xt/Utils/mysql.pm
-xt/Utils/postgresql.pm
+META.yml
+MANIFEST

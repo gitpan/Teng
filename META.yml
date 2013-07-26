@@ -6,16 +6,14 @@ build_requires:
   ExtUtils::MakeMaker: 6.36
   Test::Mock::Guard: 0
   Test::More: 0.96
-  Test::Pod: 0
   Test::Requires: 0
   Test::SharedFork: 0.15
-  Test::mysqld: 0
-  Test::postgresql: 0
 configure_requires:
-  ExtUtils::MakeMaker: 6.36
-distribution_type: module
-dynamic_config: 1
-generated_by: 'Module::Install version 1.04'
+  CPAN::Meta: 0
+  CPAN::Meta::Prereqs: 0
+  Module::Build: 0.38
+dynamic_config: 0
+generated_by: 'Minilla/v0.4.5, CPAN::Meta::Converter version 2.131490'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -23,9 +21,51 @@ meta-spec:
 name: Teng
 no_index:
   directory:
-    - inc
     - t
     - xt
+    - inc
+    - share
+    - eg
+    - examples
+    - author
+provides:
+  Teng:
+    file: lib/Teng.pm
+    version: 0.19
+  Teng::Iterator:
+    file: lib/Teng/Iterator.pm
+  Teng::Plugin::BulkInsert:
+    file: lib/Teng/Plugin/BulkInsert.pm
+  Teng::Plugin::Count:
+    file: lib/Teng/Plugin/Count.pm
+  Teng::Plugin::FindOrCreate:
+    file: lib/Teng/Plugin/FindOrCreate.pm
+  Teng::Plugin::Lookup:
+    file: lib/Teng/Plugin/Lookup.pm
+  Teng::Plugin::Pager:
+    file: lib/Teng/Plugin/Pager.pm
+  Teng::Plugin::Pager::MySQLFoundRows:
+    file: lib/Teng/Plugin/Pager/MySQLFoundRows.pm
+  Teng::Plugin::Replace:
+    file: lib/Teng/Plugin/Replace.pm
+  Teng::Plugin::SQLPager:
+    file: lib/Teng/Plugin/SQLPager.pm
+  Teng::Plugin::SingleBySQL:
+    file: lib/Teng/Plugin/SingleBySQL.pm
+  Teng::QueryBuilder:
+    file: lib/Teng/QueryBuilder.pm
+  Teng::Row:
+    file: lib/Teng/Row.pm
+  Teng::Schema:
+    file: lib/Teng/Schema.pm
+  Teng::Schema::Declare:
+    file: lib/Teng/Schema/Declare.pm
+  Teng::Schema::Dumper:
+    file: lib/Teng/Schema/Dumper.pm
+  Teng::Schema::Loader:
+    file: lib/Teng/Schema/Loader.pm
+  Teng::Schema::Table:
+    file: lib/Teng/Schema/Table.pm
 requires:
   Carp: 0
   Class::Accessor::Lite: 0.05
@@ -38,6 +78,30 @@ requires:
   SQL::Maker: 0.14
   parent: 0
 resources:
-  license: http://dev.perl.org/licenses/
+  bugtracker: https://github.com/nekokak/p5-Teng/issues
+  homepage: https://github.com/nekokak/p5-Teng
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.18
+version: 0.19
+x_contributors:
+  - 'Yuki Ibe <yibe@yibe.org>'
+  - 'libkenta <libkenta@gmail.com>'
+  - 'lestrrat <lestrrat+github@gmail.com>'
+  - 'Masahiro Honma <hiratara@cpan.org>'
+  - 'makamaka <makamaka.donzoko@gmail.com>'
+  - 'Nishibayashi Takuji <takuji@senchan.jp>'
+  - 'zentooo <ankerasoy@gmail.com>'
+  - 'Atsushi Kobayashi <nekokak _at_ gmail dot com>'
+  - 'Tomohiro Hosaka <bokutin@bokut.in>'
+  - 'issm <issmxx@gmail.com>'
+  - 'Atsushi Kato <ktat@cpan.org>'
+  - 'ktat <ktat.is@gmail.com>'
+  - 'Kazuhiro Osawa <yappo@shibuya.pl>'
+  - 'karupanerura <karupa@cpan.org>'
+  - 'Kenta Sato <k-sato@mfac.jp>'
+  - 'Masahiro Chiba <chiba@everqueue.com>'
+  - 'Masayuki Matsuki <y.songmu@gmail.com>'
+  - 'Atsushi Kobayashi <nekokak@gmail.com>'
+  - 'Jun Kuriyama <kuriyama@s2factory.co.jp>'
+  - 'Tokuhiro Matsuno <tokuhirom@gmail.com>'
+  - 'Masahiro Nagano <kazeburo@gmail.com>'
+  - 'cho45 <cho45@lowreal.net>'

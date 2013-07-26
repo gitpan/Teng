@@ -8,7 +8,9 @@ sub new {
     my ($class, $args) = @_;
 
     my $self = bless {
+        # inflated values
         _get_column_cached     => {},
+        # values will be updated
         _dirty_columns         => {},
         _autoload_column_cache => {},
         %$args,
@@ -26,24 +28,39 @@ sub generate_column_accessor {
     return sub {
         my $self = shift;
 
+        # setter is alias of set_column (not deflate column) for historical reason
         return $self->set_column( $col => @_ ) if @_;
 
-        # "Untrusted" means the row is set_column by scalarref.
-        # e.g.
-        #   $row->set_column("date" => \"DATE()");
-        if ($self->{_untrusted_row_data}->{$col}) {
-            Carp::carp("${col}'s row data is untrusted. by your update query.");
-        }
-        my $cache = $self->{_get_column_cached};
-        my $data = $cache->{$col};
-        if (! $data) {
-            $data = $cache->{$col} = $self->{table} ? $self->{table}->call_inflate($col, $self->get_column($col)) : $self->get_column($col);
-        }
-        return $data;
+        # getter is alias of get (inflate column)
+        $self->get($col);
     };
 }
 
 sub handle { $_[0]->{teng} }
+
+sub get {
+    my ($self, $col) = @_;
+
+    # "Untrusted" means the row is set_column by scalarref.
+    # e.g.
+    #   $row->set_column("date" => \"DATE()");
+    if ($self->{_untrusted_row_data}->{$col}) {
+        Carp::carp("${col}'s row data is untrusted. by your update query.");
+    }
+    my $cache = $self->{_get_column_cached};
+    my $data = $cache->{$col};
+    if (! $data) {
+        $data = $cache->{$col} = $self->{table} ? $self->{table}->call_inflate($col, $self->get_column($col)) : $self->get_column($col);
+    }
+    return $data;
+}
+
+sub set {
+    my ($self, $col, $val) = @_;
+    $self->set_column( $col => $self->{table}->call_deflate($col, $val) ); 
+    delete $self->{_get_column_cached}->{$col};
+    return $self;
+}
 
 sub get_column {
     my ($self, $col) = @_;
@@ -53,7 +70,11 @@ sub get_column {
     }
 
     if ( exists $self->{row_data}->{$col} ) {
-        return $self->{row_data}->{$col};
+        if (exists $self->{_dirty_columns}->{$col}) {
+            return $self->{_dirty_columns}->{$col};
+        } else {
+            return $self->{row_data}->{$col};
+        }
     } else {
         Carp::croak("Specified column '$col' not found in row (query: " . ( $self->{sql} || 'unknown' ) . ")" );
     }
@@ -72,13 +93,20 @@ sub get_columns {
 sub set_column {
     my ($self, $col, $val) = @_;
 
+    if ( defined $self->{row_data}->{$col} 
+      && defined $val 
+      && $self->{row_data}->{$col} eq $val ) {
+        return $val;
+    }
+
     if (ref($val) eq 'SCALAR') {
         $self->{_untrusted_row_data}->{$col} = 1;
     }
 
-    $self->{row_data}->{$col} = $val;
     delete $self->{_get_column_cached}->{$col};
-    $self->{_dirty_columns}->{$col} = 1;
+    $self->{_dirty_columns}->{$col} = $val;
+
+    $val;
 }
 
 sub set_columns {
@@ -91,11 +119,12 @@ sub set_columns {
 
 sub get_dirty_columns {
     my $self = shift;
+    +{ %{ $self->{_dirty_columns} } };
+}
 
-    my %rows = map {$_ => $self->get_column($_)}
-               keys %{$self->{_dirty_columns}};
-
-    return \%rows;
+sub is_changed {
+    my $self = shift;
+    keys %{$self->{_dirty_columns}} > 0
 }
 
 sub update {
@@ -111,19 +140,23 @@ sub update {
         Carp::croak( "Table definition for $table_name does not exist (Did you declare it in our schema?)" );
     }
 
-    %$upd = (%{$self->get_dirty_columns}, %{$upd||+{}});
-    for my $col (keys %{$upd}) {
-       $upd->{$col} = $table->call_deflate($col, $upd->{$col});
+    if ($upd) {
+        for my $col (keys %$upd) {
+            $self->set($col => $upd->{$col});
+        }
     }
 
     my $where = $self->_where_cond;
-    $self->set_columns($upd);
 
     $upd = $self->get_dirty_columns;
     return 0 unless %$upd;
 
     my $bind_args = $self->{teng}->_bind_sql_type_to_args($table, $upd);
     my $result = $self->{teng}->do_update($table_name, $bind_args, $where, 1);
+    $self->{row_data} = {
+        %{ $self->{row_data} },
+        %$upd,
+    };
     $self->{_dirty_columns} = {};
 
     $result;
@@ -172,13 +205,13 @@ sub _where_cond {
             Carp::croak "can't get primary columns in your query.";
         }
 
-        return +{ map { $_ => $self->get_column($_) } @$pk };
+        return +{ map { $_ => $self->{row_data}->{$_} } @$pk };
     } else {
         unless (grep { $pk eq $_ } @{$self->{select_columns}}) {
             Carp::croak "can't get primary column in your query.";
         }
 
-        return +{ $pk => $self->get_column($pk) };
+        return +{ $pk => $self->{row_data}->{$pk} };
     }
 }
 
@@ -207,6 +240,25 @@ Teng::Row - Teng's Row class
 
 create new Teng::Row's instance
 
+=item $row->get($col)
+
+    my $val = $row->get($column_name);
+
+    # alias
+    my $val = $row->$column_name;
+
+get a column value from a row object.
+
+Note: This method inflates values.
+
+=item $row->set($col, $val)
+
+    $row->set($col => $val);
+
+set column data.
+
+Note: This method deflates values.
+
 =item $row->get_column($column_name)
 
     my $val = $row->get_column($column_name);
@@ -229,15 +281,26 @@ Note: This method does not inflate values.
 
 set columns data.
 
+Note: This method does not deflate values.
+
 =item $row->set_column($col => $val)
 
     $row->set_column($col => $val);
 
+    # alias
+    $row->$col($val);
+
 set column data.
+
+Note: This method does not deflate values.
 
 =item $row->get_dirty_columns
 
 returns those that have been changed.
+
+=item $row->is_changed
+
+returns true, If the row object have a updated column.
 
 =item $row->update([$arg])
 
@@ -249,6 +312,8 @@ It works by schema in which primary key exists.
     # or 
     $row->set({name => 'tokuhirom'});
     $row->update;
+
+If C<$arg> HashRef is supplied, each pairs are passed to C<set()> method before update.
 
 =item $row->delete
 
@@ -262,9 +327,27 @@ refetch record from database. get new row object.
 
 =item $row->handle
 
-get teng object.
+get Teng object.
 
     $row->handle->single('table', {id => 1});
+
+=back
+
+=head1 NOTE FOR COLUMN NAME METHOD
+
+Teng::Row has methods that have name from column name. For example, if a table has column named 'foo', Teng::Row instance of it has method 'foo'.
+
+This method has different behave for setter or getter as following:
+
+    # (getter) is alias of $row->get('foo')
+    # so this method returns inflated value.
+    my $inflated_value = $row->foo;
+
+    # (setter) is alias of $row->set_column('foo', $raw_value)
+    # so this method does not deflate the value. This only accepts raw value but inflated object.
+    $row->foo($raw_value);
+
+This behave is from historical reason. You should use column name methods with great caution, if you want to use this.
 
 =cut
 
