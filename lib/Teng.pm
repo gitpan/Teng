@@ -24,7 +24,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -839,6 +839,7 @@ no creation row object.
 Accepts either an arrayref of hashrefs.
 each hashref should be a structure suitable
 for submitting to a Your::Model->insert(...) method.
+The second argument is an arrayref of hashrefs. All of the keys in these hashrefs must be exactly the same.
 
 insert many record by bulk.
 
