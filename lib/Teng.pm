@@ -24,7 +24,7 @@ use Class::Accessor::Lite
     )]
 ;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 sub load_plugin {
     my ($class, $pkg, $opt) = @_;
@@ -341,14 +341,27 @@ sub insert {
 
     my $table = $self->schema->get_table($table_name);
     my $pk = $table->primary_keys();
-    if (scalar(@$pk) == 1 && not defined $args->{$pk->[0]}) {
-        $args->{$pk->[0]} = $self->_last_insert_id($table_name);
+
+    my @missing_primary_keys = grep { not defined $args->{$_} } @$pk;
+    if (@missing_primary_keys == 1) {
+        $args->{$missing_primary_keys[0]} = $self->_last_insert_id($table_name);
     }
 
     return $args if $self->suppress_row_objects;
 
-    if (scalar(@$pk) == 1) {
-        return $self->single($table_name, {$pk->[0] => $args->{$pk->[0]}});
+    my %where;
+    my $refetch = 1;
+    for my $key (@$pk) {
+        if (ref $args->{$key}) {
+            # care references. eg. \'NOW()'
+            $refetch = undef;
+            last;
+        }
+        $where{$key} = $args->{$key};
+    }
+    if (%where && $refetch) {
+        # refetch the row for cleanup scalar refs and fill default values
+        return $self->single($table_name, \%where);
     }
 
     $table->row_class->new(
@@ -600,6 +613,32 @@ sub single_by_sql {
         {
             sql        => $sql,
             row_data   => $row,
+            teng       => $self,
+            table      => $table,
+            table_name => $table_name,
+        }
+    );
+}
+
+sub new_row_from_hash {
+    my ($self, $table_name, $data, $sql) = @_;
+
+    my $table = $self->{schema}->get_table( $table_name );
+    Carp::croak("No such table $table_name") unless $table;
+
+    return $data if $self->{suppress_row_objects};
+
+    $table->{row_class}->new(
+        {
+            sql => $sql || do {
+                my @caller = caller(0);
+                my $level = 0;
+                while ($caller[0] eq __PACKAGE__ || $caller[0] eq ref $self) {
+                    @caller = caller(++$level);
+                }
+                sprintf '/* DUMMY QUERY %s->new_row_from_hash created from %s line %d */', ref $self, $caller[1], $caller[2];
+            },
+            row_data   => $data,
             teng       => $self,
             table      => $table,
             table_name => $table_name,
@@ -932,6 +971,14 @@ get one record.
 give back one case of the beginning when it is acquired plural records by single method.
 
     my $row = $teng->single('user',{id =>1});
+
+=item C<$row = $teng-E<gt>new_row_from_hash($table_name, \%row_data, [$sql])>
+
+create row object from data. (not fetch from db.)
+It's useful in such as testing.
+
+    my $row = $teng->new_row_from_hash('user', { id => 1, foo => "bar" });
+    say $row->foo; # say bar
 
 =item C<$itr = $teng-E<gt>search_named($sql, [\%bind_values, [$table_name]])>
 
