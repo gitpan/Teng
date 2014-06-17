@@ -32,7 +32,7 @@ no_index:
 provides:
   Teng:
     file: lib/Teng.pm
-    version: 0.22
+    version: 0.23
   Teng::Iterator:
     file: lib/Teng/Iterator.pm
     version: 0
@@ -99,7 +99,7 @@ resources:
   bugtracker: https://github.com/nekokak/p5-Teng/issues
   homepage: https://github.com/nekokak/p5-Teng
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.22
+version: 0.23
 x_authority: cpan:NEKOKAK
 x_contributors:
   - 'Yuki Ibe <yibe@yibe.org>'
@@ -121,9 +121,10 @@ x_contributors:
   - 'Masahiro Nagano <kazeburo@gmail.com>'
   - 'Tokuhiro Matsuno <tokuhirom@gmail.com>'
   - 'k-sato <k-sato@mfac.jp>'
-  - 'Songmu <y.songmu@gmail.com>'
   - 'ITO Nobuaki <daydream.trippers@gmail.com>'
   - 'karupanerura <karupa@cpan.org>'
   - 'Kenichi Ishigaki <ishigaki@cpan.org>'
   - 'Geraud CONTINSOUZAS <geraud@hyaku.nijuu.nana>'
+  - 'moznion <moznion@gmail.com>'
+  - 'Songmu <y.songmu@gmail.com>'
   - 'cho45 <cho45@lowreal.net>'

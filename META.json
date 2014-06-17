@@ -44,6 +44,7 @@
       },
       "develop" : {
          "requires" : {
+            "DBIx::Tracer" : "0",
             "Test::CPAN::Meta" : "0",
             "Test::MinimumVersion" : "0.10108",
             "Test::Pod" : "1.41",
@@ -68,7 +69,7 @@
    "provides" : {
       "Teng" : {
          "file" : "lib/Teng.pm",
-         "version" : "0.22"
+         "version" : "0.23"
       },
       "Teng::Iterator" : {
          "file" : "lib/Teng/Iterator.pm"
@@ -133,7 +134,7 @@
          "web" : "https://github.com/nekokak/p5-Teng"
       }
    },
-   "version" : "0.22",
+   "version" : "0.23",
    "x_authority" : "cpan:NEKOKAK",
    "x_contributors" : [
       "Yuki Ibe <yibe@yibe.org>",
@@ -155,11 +156,12 @@
       "Masahiro Nagano <kazeburo@gmail.com>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",
       "k-sato <k-sato@mfac.jp>",
-      "Songmu <y.songmu@gmail.com>",
       "ITO Nobuaki <daydream.trippers@gmail.com>",
       "karupanerura <karupa@cpan.org>",
       "Kenichi Ishigaki <ishigaki@cpan.org>",
       "Geraud CONTINSOUZAS <geraud@hyaku.nijuu.nana>",
+      "moznion <moznion@gmail.com>",
+      "Songmu <y.songmu@gmail.com>",
       "cho45 <cho45@lowreal.net>"
    ]
 }

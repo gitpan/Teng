@@ -110,6 +110,7 @@ xt/mysql/common.t
 xt/mysql/fork.t
 xt/mysql/multi_pk_autoincr.t
 xt/mysql/pager_mysql_found_rows.t
+xt/mysql/refetch_for_update.t
 xt/mysql/transaction.t
 xt/perlcritic.t
 xt/perlcriticrc
