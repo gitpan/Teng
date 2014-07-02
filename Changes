@@ -1,5 +1,9 @@
 Revision history for Perl extension Teng
 
+0.24 2014-07-02T09:37:57Z
+
+        - ADD: Teng#new takes `sql_builder_class` and `sql_builder_args`
+
 0.23 2014-06-17T06:06:16Z
         - MODIFY: Teng::Row#refetch accepts `opt` optionally (thanks Songmu)
         - MODIFY: Teng::Row#update accepts `where` cond optionally mainly for optimistic lock (thanks Songumu)
