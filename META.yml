@@ -3,21 +3,19 @@ abstract: 'very simple DBI wrapper/ORMapper'
 author:
   - 'Atsushi Kobayashi  C<< <nekokak __at__ gmail.com> >>'
 build_requires:
-  ExtUtils::MakeMaker: 6.36
-  Test::Mock::Guard: 0
-  Test::More: 0.96
-  Test::Requires: 0
-  Test::SharedFork: 0.15
+  ExtUtils::MakeMaker: '6.36'
+  Test::Mock::Guard: '0'
+  Test::More: '0.96'
+  Test::Requires: '0'
+  Test::SharedFork: '0.15'
 configure_requires:
-  CPAN::Meta: 0
-  CPAN::Meta::Prereqs: 0
-  Module::Build: 0.38
+  Module::Build: '0.38'
 dynamic_config: 0
-generated_by: 'Minilla/v0.11.0, CPAN::Meta::Converter version 2.120921'
+generated_by: 'Minilla/v2.1.1, CPAN::Meta::Converter version 2.141520'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: Teng
 no_index:
   directory:
@@ -32,74 +30,57 @@ no_index:
 provides:
   Teng:
     file: lib/Teng.pm
-    version: 0.24
+    version: '0.25'
   Teng::Iterator:
     file: lib/Teng/Iterator.pm
-    version: 0
   Teng::Plugin::BulkInsert:
     file: lib/Teng/Plugin/BulkInsert.pm
-    version: 0
   Teng::Plugin::Count:
     file: lib/Teng/Plugin/Count.pm
-    version: 0
   Teng::Plugin::FindOrCreate:
     file: lib/Teng/Plugin/FindOrCreate.pm
-    version: 0
   Teng::Plugin::Lookup:
     file: lib/Teng/Plugin/Lookup.pm
-    version: 0
   Teng::Plugin::Pager:
     file: lib/Teng/Plugin/Pager.pm
-    version: 0
   Teng::Plugin::Pager::MySQLFoundRows:
     file: lib/Teng/Plugin/Pager/MySQLFoundRows.pm
-    version: 0
   Teng::Plugin::Replace:
     file: lib/Teng/Plugin/Replace.pm
-    version: 0
   Teng::Plugin::SQLPager:
     file: lib/Teng/Plugin/SQLPager.pm
-    version: 0
   Teng::Plugin::SingleBySQL:
     file: lib/Teng/Plugin/SingleBySQL.pm
-    version: 0
   Teng::QueryBuilder:
     file: lib/Teng/QueryBuilder.pm
-    version: 0
   Teng::Row:
     file: lib/Teng/Row.pm
-    version: 0
   Teng::Schema:
     file: lib/Teng/Schema.pm
-    version: 0
   Teng::Schema::Declare:
     file: lib/Teng/Schema/Declare.pm
-    version: 0
   Teng::Schema::Dumper:
     file: lib/Teng/Schema/Dumper.pm
-    version: 0
   Teng::Schema::Loader:
     file: lib/Teng/Schema/Loader.pm
-    version: 0
   Teng::Schema::Table:
     file: lib/Teng/Schema/Table.pm
-    version: 0
 requires:
-  Carp: 0
-  Class::Accessor::Lite: 0.05
-  Class::Load: 0.06
-  DBI: 1.33
-  DBIx::Inspector: 0.06
-  DBIx::TransactionManager: 1.06
-  Data::Page: 0
-  Data::Page::NoTotalEntries: 0.02
-  SQL::Maker: 0.14
-  parent: 0
+  Carp: '0'
+  Class::Accessor::Lite: '0.05'
+  Class::Load: '0.06'
+  DBI: '1.33'
+  DBIx::Inspector: '0.06'
+  DBIx::TransactionManager: '1.06'
+  Data::Page: '0'
+  Data::Page::NoTotalEntries: '0.02'
+  SQL::Maker: '0.14'
+  parent: '0'
 resources:
   bugtracker: https://github.com/nekokak/p5-Teng/issues
   homepage: https://github.com/nekokak/p5-Teng
   repository: git://github.com/nekokak/p5-Teng.git
-version: 0.24
+version: '0.25'
 x_authority: cpan:NEKOKAK
 x_contributors:
   - 'Yuki Ibe <yibe@yibe.org>'
@@ -127,4 +108,6 @@ x_contributors:
   - 'Geraud CONTINSOUZAS <geraud@hyaku.nijuu.nana>'
   - 'moznion <moznion@gmail.com>'
   - 'Songmu <y.songmu@gmail.com>'
+  - 'nobuoka <nobuoka@vividcode.info>'
+  - 'Kazuho Oku <kazuhooku@gmail.com>'
   - 'cho45 <cho45@lowreal.net>'
