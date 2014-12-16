@@ -107,6 +107,7 @@ xt/Utils/postgresql.pm
 xt/mysql/003_schema_loader.t
 xt/mysql/004_schema_dumper.t
 xt/mysql/bulk_insert.t
+xt/mysql/bulk_insert_takes_opt.t
 xt/mysql/common.t
 xt/mysql/fork.t
 xt/mysql/multi_pk_autoincr.t
